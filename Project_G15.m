@@ -219,4 +219,25 @@ xlabel('0.01s')
 ylabel('q')
 hold off
 
-m0 = [0; sqrt(mag_x(i,1)^2 + mag_y(i,1)^2); mag_z(i,1)];
+
+%% task 9
+
+for i = 2:n
+    [x_EKF(:,i), P_EKF(:,:,i)] = tu_qw(x_EKF_up(:,i-1), P_EKF_up(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
+    [x_EKF(:,i), P_EKF(:,:,i)] = mu_normalizeQ(x_EKF(:,i), P_EKF(:,:,i));
+    m0 = [0; sqrt(mag_x(i,1)^2 + mag_y(i,1)^2); mag_z(i,1)];
+    [x_EKF_up(:,i), P_EKF_up(:,:,i)] = mu_m(x_EKF(:,i), P_EKF(:,:,i), mag(i,:)', m0, mag_cov);
+    [x_EKF_up(:,i), P_EKF_up(:,:,i)] = mu_normalizeQ(x_EKF_up(:,i), P_EKF_up(:,:,i));
+end
+
+figure
+hold on
+plot(x_EKF_up(1,:));
+plot(x_EKF_up(2,:));
+plot(x_EKF_up(3,:));
+plot(x_EKF_up(4,:));
+title('EKF updated with mag')
+legend('q1', 'q2', 'q3', 'q4')
+xlabel('0.01s')
+ylabel('q')
+hold off
