@@ -174,7 +174,6 @@ P_EKF(:,:,1) = P0;
 
 for i = 2:n
     [x_EKF(:,i), P_EKF(:,:,i)] = tu_qw(x_EKF(:,i-1), P_EKF(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
-    [x_EKF(:,i), P_EKF(:,:,i)] = mu_normalizeQ(x_EKF(:,i), P_EKF(:,:,i));
 end
 
 figure
@@ -191,7 +190,7 @@ hold off
 
 
 %% Task 7
-g0 = [0;0;acc_z_mean];
+g0 = acc_z_mean;
 x_EKF_up = zeros(4,n);
 P_EKF_up = zeros(4, 4, n);
 q0 = Somega(gyro_mean) * [1;1;1;1];
@@ -202,19 +201,6 @@ P_EKF_up(:,:,1) = P0;
 
 for i = 2:n
     [x_EKF(:,i), P_EKF(:,:,i)] = tu_qw(x_EKF_up(:,i-1), P_EKF_up(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
-    [x_EKF(:,i), P_EKF(:,:,i)] = mu_normalizeQ(x_EKF(:,i), P_EKF(:,:,i));
-    [x_EKF_up(:,i), P_EKF_up(:,:,i)] = mu_g(x_EKF(:,i), P_EKF(:,:,i), acc(i,:)', acc_cov, g0);
-    [x_EKF_up(:,i), P_EKF_up(:,:,i)] = mu_normalizeQ(x_EKF_up(:,i), P_EKF_up(:,:,i));
-end
+    [x_EKF_up(:,1), P_EKF_up(:,:,i)] = mu_g(x_EKF(:,i), P_EKF(:,:,i), acc(i,:)', acc_cov, g0);
 
-figure
-hold on
-plot(x_EKF_up(1,:));
-plot(x_EKF_up(2,:));
-plot(x_EKF_up(3,:));
-plot(x_EKF_up(4,:));
-title('EKF updated')
-legend('q1', 'q2', 'q3', 'q4')
-xlabel('0.01s')
-ylabel('q')
-hold off
+end
