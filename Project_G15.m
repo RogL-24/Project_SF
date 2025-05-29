@@ -218,3 +218,5 @@ legend('q1', 'q2', 'q3', 'q4')
 xlabel('0.01s')
 ylabel('q')
 hold off
+
+m0 = [0; sqrt(mag_x(i,1)^2 + mag_y(i,1)^2); mag_z(i,1)];
