@@ -3,6 +3,7 @@ clc
 clear all
 close all
 data = load('sensorlog_flat.mat');
+nrbin = 50; % number of bins
 
 % Acceleration data
 acc_x = table2array(data.Acceleration(30:535,1));
@@ -16,6 +17,7 @@ acc_z_mean = mean(acc_z);
 acc_x_var = var(acc_x);
 acc_y_var = var(acc_y);
 acc_z_var = var(acc_z);
+acc_cov = cov([acc_x, acc_y, acc_z]);
 
 figure
 hold on
@@ -30,7 +32,7 @@ hold off
 
 figure
 hold on
-histogram(acc_x,50)
+histogram(acc_x, nrbin)
 title('Acceleration data distribution in the x-axis')
 xlabel('m/s^2')
 ylabel('Number of data points')
@@ -38,7 +40,7 @@ hold off
 
 figure
 hold on
-histogram(acc_y,50)
+histogram(acc_y, nrbin)
 title('Acceleration data distribution in the y-axis')
 xlabel('m/s^2')
 ylabel('Number of data points')
@@ -46,7 +48,7 @@ hold off
 
 figure
 hold on
-histogram(acc_z,50)
+histogram(acc_z, nrbin)
 title('Acceleration data distribution in the z-axis')
 xlabel('m/s^2')
 ylabel('Number of data points')
@@ -65,6 +67,7 @@ mag_z_mean = mean(mag_z);
 mag_x_var = var(mag_x);
 mag_y_var = var(mag_y);
 mag_z_var = var(mag_z);
+mag_cov = cov([mag_x, mag_y, mag_z]);
 
 figure
 hold on
@@ -79,7 +82,7 @@ hold off
 
 figure
 hold on
-histogram(mag_x,50)
+histogram(mag_x, nrbin)
 title('Magnetic data distribution in the x-axis')
 xlabel('mu*T')
 ylabel('Number of data points')
@@ -87,7 +90,7 @@ hold off
 
 figure
 hold on
-histogram(mag_y,50)
+histogram(mag_y, nrbin)
 title('Magnetic data distribution in the y-axis')
 xlabel('mu*T')
 ylabel('Number of data points')
@@ -95,7 +98,7 @@ hold off
 
 figure
 hold on
-histogram(mag_z,50)
+histogram(mag_z, nrbin)
 title('Magnetic data distribution in the z-axis')
 xlabel('mu*T')
 ylabel('Number of data points')
@@ -114,6 +117,7 @@ gyro_z_mean = mean(gyro_z);
 gyro_x_var = var(gyro_x);
 gyro_y_var = var(gyro_y);
 gyro_z_var = var(gyro_z);
+gyro_cov = cov([gyro_x, gyro_y, gyro_z]);
 
 figure
 hold on
@@ -128,7 +132,7 @@ hold off
 
 figure
 hold on
-histogram(gyro_x,50)
+histogram(gyro_x, nrbin)
 title('Gyro data distribution in the x-axis')
 xlabel('Angular velocity')
 ylabel('Number of data points')
@@ -136,7 +140,7 @@ hold off
 
 figure
 hold on
-histogram(gyro_y,50)
+histogram(gyro_y, nrbin)
 title('Gyro data distribution in the y-axis')
 xlabel('Angular velocity')
 ylabel('Number of data points')
@@ -144,7 +148,7 @@ hold off
 
 figure
 hold on
-histogram(gyro_z,50)
+histogram(gyro_z, nrbin)
 title('Gyro data distribution in the z-axis')
 xlabel('Angular velocity')
 ylabel('Number of data points')
