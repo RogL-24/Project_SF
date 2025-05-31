@@ -3,7 +3,7 @@ clc
 clear
 close all
 
-data = load('Dataset1.mat');
+data = load('Dataset3.mat');
 nrbin = 50; % number of bins
 
 T = 1/100; %1/f 100 Hz
@@ -207,7 +207,7 @@ hold off
 
 % 
 %% Task 6 & 7
-g0 = [0;0;acc_z_mean];
+g0 = [acc_x_mean; acc_y_mean; acc_z_mean];
 x_Post_wa = zeros(4,n); % x Posterior with accelerometer data
 P_Post_wa = zeros(4, 4, n); % P Posterior with accelerometer data
 % q0 = Somega(gyro_mean) * [1;1;1;1];
@@ -221,7 +221,7 @@ for i = 2:n
     [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = tu_qw(x_Post_wa(:,i-1), P_Post_wa(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
     [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = mu_normalizeQ(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1));
     
-    [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc(i,:)', acc_cov, g0);
+    [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc(i-1,:)', acc_cov, g0);
     [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_normalizeQ(x_Post_wa(:,i), P_Post_wa(:,:,i));
     
     estimated_orientation_wa(:,i) = q2euler(x_Post_wa(:,i));
@@ -281,9 +281,9 @@ for i = 2:n
     [x_Pred_wm(:,i-1), P_Pred_wm(:,:,i-1)] = tu_qw(x_Post_wm(:,i-1), P_Post_wm(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
     [x_Pred_wm(:,i-1), P_Pred_wm(:,:,i-1)] = mu_normalizeQ(x_Pred_wm(:,i-1), P_Pred_wm(:,:,i-1));
     
-    m0 = [0; sqrt(mag_x(i,1)^2 + mag_y(i,1)^2); mag_z(i,1)];
+    m0 = [0; sqrt(mag_x(i-1,1)^2 + mag_y(i-1,1)^2); mag_z(i-1,1)];
 
-    [x_Post_wm(:,i), P_Post_wm(:,:,i)] = mu_m(x_Pred_wm(:,i-1), P_Pred_wm(:,:,i-1), mag(i,:)', m0, mag_cov);
+    [x_Post_wm(:,i), P_Post_wm(:,:,i)] = mu_m(x_Pred_wm(:,i-1), P_Pred_wm(:,:,i-1), mag(i-1,:)', m0, mag_cov);
     [x_Post_wm(:,i), P_Post_wm(:,:,i)] = mu_normalizeQ(x_Post_wm(:,i), P_Post_wm(:,:,i));
 
     estimated_orientation_wm(:,i) = q2euler(x_Post_wm(:,i));
@@ -331,4 +331,74 @@ plot(total_time, orient_z(1:N));
 plot(total_time, estimated_orientation_wm(3,:));
 legend('True orientation', 'Estimated orientation')
 title('Estimated vs True orientation : z (gyro & mag)')
+hold off
+
+%% Update using both accelerometer and magnetometer
+g0 = [acc_x_mean; acc_y_mean; acc_z_mean];
+x_Post = zeros(4,n); % x Posterior with accelerometer data
+P_Post = zeros(4, 4, n); % P Posterior with accelerometer data
+
+q0 = [1; 0; 0; 0];
+P0 = eye(4);
+x_Post(:,1) = q0;
+P_Post(:,:,1) = P0;
+
+
+for i = 2:n
+    [x_Pred(:,i-1), P_Pred(:,:,i-1)] = tu_qw(x_Post(:,i-1), P_Post(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
+    [x_Pred(:,i-1), P_Pred(:,:,i-1)] = mu_normalizeQ(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1));
+    
+    % Accelerometer update
+    [x_Post(:,i), P_Post(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc(i,:)', acc_cov, g0);
+    [x_Post(:,i), P_Post(:,:,i)] = mu_normalizeQ(x_Post(:,i), P_Post(:,:,i));
+
+    % Magnetometer update
+    [x_Post(:,i), P_Post(:,:,i)] = mu_m(x_Post(:,i), P_Post(:,:,i), mag(i,:)', m0, mag_cov);
+    [x_Post(:,i), P_Post(:,:,i)] = mu_normalizeQ(x_Post(:,i), P_Post(:,:,i));
+
+    estimated_orientation_wa(:,i) = q2euler(x_Post(:,i));
+end
+
+figure
+hold on
+plot(total_time, x_Post_wm(1,:));
+plot(total_time, x_Post_wm(2,:));
+plot(total_time, x_Post_wm(3,:));
+plot(total_time, x_Post_wm(4,:));
+title('EKF updated with acc & mag')
+legend('q1', 'q2', 'q3', 'q4')
+xlabel('0.01s')
+ylabel('q')
+hold off
+
+orient_x = table2array(data.Orientation(:,1));
+orient_y = table2array(data.Orientation(:,2));
+orient_z = table2array(data.Orientation(:,3));
+
+figure
+subplot(3,1,1)
+grid on
+hold on
+plot(total_time, orient_x(1:N));
+plot(total_time, estimated_orientation_wm(1,:));
+legend('True orientation', 'Estimated orientation')
+title('Estimated vs True orientation : x (gyro, acc & mag)')
+hold off
+
+subplot(3,1,2) 
+grid on
+hold on
+plot(total_time, orient_y(1:N));
+plot(total_time, estimated_orientation_wm(2,:));
+legend('True orientation', 'Estimated orientation')
+title('Estimated vs True orientation : y (gyro, acc & mag)')
+hold off
+
+subplot(3,1,3)
+grid on
+hold on
+plot(total_time, orient_z(1:N));
+plot(total_time, estimated_orientation_wm(3,:));
+legend('True orientation', 'Estimated orientation')
+title('Estimated vs True orientation : z (gyro, acc & mag)')
 hold off
