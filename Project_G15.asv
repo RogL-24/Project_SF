@@ -3,18 +3,18 @@ clc
 clear
 close all
 
-data = load('sensorlog_spun_all_axis.mat');
+data = load('Dataset3.mat');
 nrbin = 50; % number of bins
 
 T = 1/100; %1/f 100 Hz
-N = length(table2array(data.MagneticField)); % no of points
-total_time = 0:T:T*N - T ; % Time interval
+N = length(table2array(data.Acceleration)); % no of points
+total_time = 0:T:T*N - T; % Time interval
 g = 9.786007570512820; % z mean from Dataset3.mat
 
 %% Acceleration data - Task 2
-acc_x = table2array(data.Acceleration(1:N,1));
-acc_y = table2array(data.Acceleration(1:N,2));
-acc_z = table2array(data.Acceleration(1:N,3));
+acc_x = table2array(data.Acceleration(:,1));
+acc_y = table2array(data.Acceleration(:,2));
+acc_z = table2array(data.Acceleration(:,3));
 acc = [acc_x, acc_y, acc_z];
 
 acc_x_mean = mean(acc_x);
@@ -275,11 +275,7 @@ hold off
 
 %% Task 8
 
-beta = 0.5; % the limit for assuming that an acceleration is happening in 
-             % Outliner 1, how different the acceleration is between the 
-             % gyro and acc can be
-             % 0.05 best for outliner 1
-             % 0.5 best for outliner 2
+beta = 0.05; % the limit for assuming that an acceleration is happening
 
 x_Post_wa(:,1) = q0;
 P_Post_wa(:,:,1) = P0;
@@ -325,10 +321,10 @@ for i = 2:n
     acc_z_diff = gyro_z_diff/T - acc(i-1,3) - g;
     
 
-    if  acc_x_diff < beta || acc_y_diff < beta || acc_z_diff < beta
-        acc_edit(i-1,:) = acc(i-1,:);
+    if  abs_gyro < beta
+        acc_edit(i-1,3) = g;
     else
-        acc_edit(i-1,:) = [gyro_x_diff/T, gyro_y_diff/T, gyro_z_diff/T + g];
+        acc_edit(i-1,:) = acc(i-1,:);
     end
 
 
