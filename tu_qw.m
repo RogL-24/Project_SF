@@ -4,13 +4,13 @@ function [x, P] = tu_qw(x, P, omega, T, Rw)
     n = length(omega);
     if n > 0 && all(~isnan(omega)) 
         % F = I + AT; where A = 1/2 * S(\omega);
-        F = eye(length(x)) + 0.5 * Somega(omega) * T;
+        F = eye(length(x)) + 0.5 * T * Somega(omega);
     else
         F = eye(length(x));
     end
 
     % G = 1/2 * S(q)*T
-    G = 0.5 * Sq(x) * T;
+    G = 0.5 * T * Sq(x);
 
     % State Prediction
     % x = F * x + G * mvnrnd([0;0;0],Rw)';
