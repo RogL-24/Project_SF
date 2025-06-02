@@ -27,7 +27,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
     m.MagneticSensorEnabled = 1;
     m.OrientationSensorEnabled = 1;
     m.logging = 1;
-    pause(2)
+    pause(1)
     %% Filter settings
     t0 = [];  % Initial time (initialize on first data received)
     t = 0;
@@ -101,10 +101,12 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
         mag_z_var = var(mag(:,3));
         mag_cov = cov(mag);
 
-        orientation = orientlog(m);  % Google's orientation estimate.
+        orientation = deg2rad(orientlog(m));  % Google's orientation estimate.
         N_acc = length(acc);
         N_mag = length(mag);
         N_gyro = length(gyro);
+        
+        discardlogs(m);
 
         N = min([N_gyro,N_mag,N_acc]);
         for i = 2:N
@@ -153,7 +155,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
                         % Used for visualization.
                         googleView = OrientationView('Google filter', gca);
                     end
-                    setOrientation(googleView, eul2quat(orientation));
+                    setOrientation(googleView, eul2quat(orientation(i,:)));
                     title(googleView, 'GOOGLE', 'FontSize', 16);
                 end
             end
@@ -170,5 +172,9 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
             meas.mag(:, end+1) = mag(i,:)';
             meas.orient(:, end+1) = eul2quat(orientation(i,:))';
         end
+        acc = [];
+        mag = [];
+        gyro = [];
+        pause(1)
     end
 end

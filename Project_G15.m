@@ -208,7 +208,8 @@ hold off
 
 % 
 %% Task 6 & 7
-g0 = [acc_x_mean; acc_y_mean; acc_z_mean];
+% g0 = [acc_x_mean; acc_y_mean; acc_z_mean];
+g0 = [0;0;acc_z_mean];
 x_Post_wa = zeros(4,n); % x Posterior with accelerometer data
 P_Post_wa = zeros(4, 4, n); % P Posterior with accelerometer data
 % q0 = Somega(gyro_mean) * [1;1;1;1];
@@ -220,7 +221,7 @@ P_Post_wa(:,:,1) = P0;
 
 for i = 2:n
     [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = tu_qw(x_Post_wa(:,i-1), P_Post_wa(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
-    [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = mu_normalizeQ(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1));
+    % [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = mu_normalizeQ(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1));
     
     [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc(i-1,:)', acc_cov, g0);
     [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_normalizeQ(x_Post_wa(:,i), P_Post_wa(:,:,i));
