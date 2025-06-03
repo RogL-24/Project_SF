@@ -3,7 +3,7 @@ clc
 clear
 close all
 
-data = load('sensorlog_rotated.mat');
+data = load('sensorlog_flat.mat');
 nrbin = 50; % number of bins
 
 T = 1/100; %1/f 100 Hz
@@ -283,32 +283,50 @@ x_Post_wa(:,1) = q0;
 P_Post_wa(:,:,1) = P0;
 
 acc_edit = zeros(N,3);
+L_hat_acc = zeros(1,N);
+acc_limit = 0.5;
+alpha = 0.5;
 
 for i = 2:n
     [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = tu_qw(x_Post_wa(:,i-1), P_Post_wa(:,:,i-1), gyro(i-1,:)', T, gyro_cov);
     [x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1)] = mu_normalizeQ(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1));
     
-    % Outliner vesrion 1
-    if i >= 3
-        gyro_x_diff = gyro(i-1,1)-gyro(i-2,1);
-        gyro_y_diff = gyro(i-1,2)-gyro(i-2,2);
-        gyro_z_diff = gyro(i-1,3)-gyro(i-2,3);
-    else
-        gyro_x_diff = gyro(i-1,1)-0;
-        gyro_y_diff = gyro(i-1,2)-0;
-        gyro_z_diff = gyro(i-1,3)-0;
+    % % Outliner vesrion 1
+    % if i >= 3
+    %     gyro_x_diff = gyro(i-1,1)-gyro(i-2,1);
+    %     gyro_y_diff = gyro(i-1,2)-gyro(i-2,2);
+    %     gyro_z_diff = gyro(i-1,3)-gyro(i-2,3);
+    % else
+    %     gyro_x_diff = gyro(i-1,1)-0;
+    %     gyro_y_diff = gyro(i-1,2)-0;
+    %     gyro_z_diff = gyro(i-1,3)-0;
+    % end
+    % 
+    % abs_gyro = sqrt(gyro_x_diff^2 + gyro_y_diff^2+ gyro_z_diff^2);
+    % 
+    % if  abs_gyro < beta
+    %     acc_edit(i-1,3) = g;
+    % else
+    %     acc_edit(i-1,:) = acc(i-1,:);
+    % end
+    % [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc_edit(i-1,:)', acc_cov, g0);
+    % [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_normalizeQ(x_Post_wa(:,i), P_Post_wa(:,:,i));
+
+    % outliner v2
+
+    acc_norm = sqrt(acc(i-1,1)^2 + acc(i-1,2)^2 + acc(i-1,3)^2);
+    L_hat_acc(i) = (1 - alpha)*L_hat_acc(i-1) + alpha * acc_norm;
+    
+    if abs(acc_norm - L_hat_acc) < acc_limit
+        [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc(i-1,:)', acc_cov, g0);
+        [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_normalizeQ(x_Post_wa(:,i), P_Post_wa(:,:,i));
+
+    else % acc data is skipped
+        x_Post_wa(:,i) = x_Pred_wa(:,i-1);
+        P_Post_wa(:,:,i) = P_Pred_wa(:,:,i-1);
     end
 
-    abs_gyro = sqrt(gyro_x_diff^2 + gyro_y_diff^2+ gyro_z_diff^2);
-
-    if  abs_gyro < beta
-        acc_edit(i-1,3) = g;
-    else
-        acc_edit(i-1,:) = acc(i-1,:);
-    end
-
-    [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_g(x_Pred_wa(:,i-1), P_Pred_wa(:,:,i-1), acc_edit(i-1,:)', acc_cov, g0);
-    [x_Post_wa(:,i), P_Post_wa(:,:,i)] = mu_normalizeQ(x_Post_wa(:,i), P_Post_wa(:,:,i));
+    
     
     estimated_orientation_wa(:,i) = q2euler(x_Post_wa(:,i)); 
 end
