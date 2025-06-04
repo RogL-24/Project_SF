@@ -13,10 +13,10 @@ function [x, P] = mu_g(x, P, yacc, Ra, g0)
     % Innovation gain
     S = H * P * H' + Ra;
     %Kalman Gain
-    if rcond(S) > 1e-15  
+    if rcond(S) < 1 
         K = P * H' * inv(S);
     else
-        K = zeros(4,3);
+        K = 0;
     end
     % state update 
     x = x + K * (yacc - h);

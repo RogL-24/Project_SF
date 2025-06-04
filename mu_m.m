@@ -12,7 +12,11 @@ function [x, P] = mu_m(x, P, mag, m0, Rm)
     % Innovation gain
     S = H * P * H' + Rm;
     %Kalman Gain
-    K = P * H' * inv(S);
+    if rcond(S) > 1e-15
+        K = P * H' * inv(S);
+    else
+        K = zeros(4,3);
+    end
     % state update 
     x = x + K * (mag - h);
     % Covariance update

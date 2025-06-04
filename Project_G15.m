@@ -3,7 +3,7 @@ clc
 clear
 close all
 
-data = load('sensorlog_flat.mat');
+data = load('Dataset3.mat');
 nrbin = 50; % number of bins
 
 T = 1/100; %1/f 100 Hz
