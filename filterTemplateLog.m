@@ -64,7 +64,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
     Time = tic;
     %% Filter loop
     while toc(Time) <= duration  % Repeat while data is available
-        t = t + 1/m.SampleRate;  % Extract current time
+        
         counter = 0;  % Used to throttle the displayed frame rate
         disp(t)
         gyro = angvellog(m);
@@ -96,6 +96,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
         N = min([N_gyro,N_mag,N_acc,N_orientation]);
 
         for i = 2:N
+            t = t + 1/m.SampleRate;  % Extract current time
             if all(~isnan(gyro(i-1,:)))
                 [est_x, est_P] = tu_qw(est_x, est_P, gyro(i-1,:)', T, gyro_cov);
                 [est_x, est_P] = mu_normalizeQ(est_x, est_P);
@@ -133,7 +134,8 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
             
             x = est_x';
             P = est_P;
-            
+            orient = orientation(i-1,:)';
+
             % Visualize result
             if rem(counter, 10) == 0
                 setOrientation(ownView, x);
@@ -144,7 +146,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
                         % Used for visualization.
                         googleView = OrientationView('Google filter', gca);
                     end
-                    setOrientation(googleView, eul2quat(orientation(i-1,:)));
+                    setOrientation(googleView, eul2quat(orient'));
                     title(googleView, 'GOOGLE', 'FontSize', 16);
                 end
             end
