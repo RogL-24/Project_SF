@@ -150,7 +150,10 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
                         % Used for visualization.
                         googleView = OrientationView('Google filter', gca);
                     end
-                    setOrientation(googleView, eul2quat(orientation(i-1,:)));
+                    orient = [0 -1 0; 0 -1 0; 0 0 1] * orientation(i-1,:)';
+                    match_orient = eul2quat(orient');
+                    setOrientation(googleView, match_orient);
+                    % setOrientation(googleView, eul2quat(orientation(i-1,:)));
                     title(googleView, 'GOOGLE', 'FontSize', 16);
                 end
             end
@@ -165,7 +168,8 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
             meas.acc(:, end+1) = acc(i-1,:)';
             meas.gyr(:, end+1) = gyro(i-1,:)';
             meas.mag(:, end+1) = mag(i-1,:)';
-            meas.orient(:, end+1) = eul2quat(orientation(i-1,:))';
+            % meas.orient(:, end+1) = eul2quat(orientation(i-1,:))';
+            meas.orient(:,end+1) = eul2quat
         end
         acc = [];
         mag = [];
