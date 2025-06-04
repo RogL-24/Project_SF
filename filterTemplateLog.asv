@@ -46,8 +46,10 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
     est_P = P;
 
     g = 9.81;
+    % Alpha required for the L_hat equation.
     alpha = 0.01;
-
+    
+    % Tuning of the outlier threshold
     acc_outlier_thresh = 2;
     mag_outlier_thresh = 0.5;
 
@@ -67,11 +69,12 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
         
         counter = 0;  % Used to throttle the displayed frame rate
         disp(t)
-        gyro = angvellog(m);
-        acc = accellog(m);
-        mag = magfieldlog(m);
+        gyro = angvellog(m); % Read the gyro data
+        acc = accellog(m); % Read the accelerometer data
+        mag = magfieldlog(m); % Read the magnetometer data
         orientation = deg2rad(orientlog(m));  % Google's orientation estimate.
-
+        
+        % length of the data
         N_acc = length(acc);
         N_mag = length(mag);
         N_gyro = length(gyro);
@@ -79,12 +82,13 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
 
         if isempty(t0)  % Initialize t0
             t0 = t;
+            % Compute the mean and Covariances of the three sensors
             [~, gyro_cov] = mean_cov(gyro(:,1),gyro(:,2), gyro(:,3),1);
             [acc_mean, acc_cov] = mean_cov(acc(:,1), acc(:,2), acc(:,3),2);
             [mag_mean, mag_cov] = mean_cov(mag(:,1), mag(:,2), mag(:,3),3);
-            g0 = acc_mean;
-            m0 = [0; sqrt(mag_mean(1,1)^2 + mag_mean(2,1)^2); mag_mean(3,1)];
-            mag_cov = 10 * mag_cov;
+            g0 = acc_mean; % initialize g0 to mean of acc since we want to move the phone
+            m0 = [0; sqrt(mag_mean(1,1)^2 + mag_mean(2,1)^2); mag_mean(3,1)]; % initialize m0 
+            mag_cov = 10 * mag_cov; % Tuned Cov of magnetometer
             disp("You can now move/rotate your phone")
 
             figure;
@@ -92,14 +96,15 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
             ownView = OrientationView('Own filter', gca);  % Used for visualization.
             googleView = [];
         end
-
+        % If length of data are not the same then we choose the one whose
+        % length is the least
         N = min([N_gyro,N_mag,N_acc,N_orientation]);
 
         for i = 2:N
             t = t + 1/m.SampleRate;  % Extract current time
             if all(~isnan(gyro(i-1,:)))
-                [est_x, est_P] = tu_qw(est_x, est_P, gyro(i-1,:)', T, gyro_cov);
-                [est_x, est_P] = mu_normalizeQ(est_x, est_P);
+                [est_x, est_P] = tu_qw(est_x, est_P, gyro(i-1,:)', T, gyro_cov); %Gyro as input
+                [est_x, est_P] = mu_normalizeQ(est_x, est_P); % Normalize the quaternions
                 flag_gyro = 1;
             end
 
@@ -134,10 +139,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
             
             x = est_x';
             P = est_P;
-            % R = Qq(est_x);
-            % R = [0 -1 0; 1 0 0; 0 0 1] * [1 0 0; 0 0 -1; 0 1 0];
-            R = [0 -1 0; 1 0 0; 0 0 1] * [1 0 0; 0 0 -1; 0 1 0];
-            orient = R * orientation(i-1,:)';
+            orient = orientation(i-1,:)';
 
             % Visualize result
             if rem(counter, 10) == 0
