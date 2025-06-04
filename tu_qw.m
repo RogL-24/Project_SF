@@ -13,7 +13,6 @@ function [x, P] = tu_qw(x, P, omega, T, Rw)
     G = 0.5 * T * Sq(x);
 
     % State Prediction
-    % x = F * x + G * mvnrnd([0;0;0],Rw)';
     x = F * x;
 
     % Covariance Prediction.

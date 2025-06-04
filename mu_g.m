@@ -21,7 +21,6 @@ function [x, P] = mu_g(x, P, yacc, Ra, g0)
     % state update 
     x = x + K * (yacc - h);
     % Covariance update
-    % P = P - K * S * K';
-    P = P - K * H * P;
+    P = P - K * S * K';
 
 end

@@ -20,7 +20,6 @@ function [x, P] = mu_m(x, P, mag, m0, Rm)
     % state update 
     x = x + K * (mag - h);
     % Covariance update
-    % P = P - K * S * K';
-    P = P - K * H * P;
+    P = P - K * S * K';
 
 end

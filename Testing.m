@@ -7,6 +7,7 @@ m.OrientationSensorEnabled = 1;
 m.logging = 1;
 pause(20)
 
+% gyro = angvellog(m);
 gyro = angvellog(m);
 acc = accellog(m);
 mag = magfieldlog(m);

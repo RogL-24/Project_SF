@@ -26,6 +26,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
     m.AngularVelocitySensorEnabled = 1;
     m.MagneticSensorEnabled = 1;
     m.OrientationSensorEnabled = 1;
+    m.SampleRate = 100;
     m.logging = 1;
     pause(2)
     %% Filter settings
@@ -33,7 +34,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
     t = 0;
     n = 4;   % Assuming that you use q as state variable.
     % Add your filter settings here.
-    T = m.SampleRate;
+    T = 1/m.SampleRate;
 
     % Current filter state.
     x = [1; 0; 0 ;0];
@@ -44,10 +45,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
     g = 9.81;
     alpha = 0.01;
 
-    % acc_outlier_thresh = 0.8;
     acc_outlier_thresh = 2;
-    % mag_outlier_thresh = 0.0001;
-    % mag_outlier_thresh = 0.5;
     mag_outlier_thresh = 0.5;
 
     % Saved filter states.
@@ -92,87 +90,51 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
             [mag_mean, mag_cov] = mean_cov(mag(:,1), mag(:,2), mag(:,3));
             g0 = acc_mean;
             m0 = [0; sqrt(mag_mean(1,1)^2 + mag_mean(2,1)^2); mag_mean(3,1)];
-            % gyro_cov = 10 gyro_cov;
-            acc_cov = 1 * acc_cov;
             mag_cov = 10 * mag_cov;
             
         end
 
         N = min([N_gyro,N_mag,N_acc,N_orientation]);
-        L_hat(1) = norm(mag(1,:));
+        
 
         for i = 2:N
             if all(~isnan(gyro(i-1,:)))
                 [est_x, est_P] = tu_qw(est_x, est_P, gyro(i-1,:)', T, gyro_cov);
                 [est_x, est_P] = mu_normalizeQ(est_x, est_P);
                 flag_gyro = 1;
-                % disp("Predicted")
             else
-                % disp("Skipping gyro")
                 flag_gyro = 0;
             end
 
             % Accelerometer update
             if all(~isnan(acc(i-1,:))) && flag_gyro == 1
-                % if i < 3
-                    if abs(norm(acc(i-1,:)) - g) < acc_outlier_thresh
-                    % [est_x_wa, est_P_wa] = mu_g(est_x, est_P, acc(i-1,:)', acc_cov, g0);
-                    % [est_x_wa, est_P_wa] = mu_normalizeQ(est_x_wa, est_P_wa);
+                if abs(norm(acc(i-1,:)) - g) < acc_outlier_thresh
                     [est_x, est_P] = mu_g(est_x, est_P, acc(i-1,:)', acc_cov, g0);
                     [est_x, est_P] = mu_normalizeQ(est_x, est_P);
                     disp("Updated with accelerometer")
-                    % else
-                        % est_x_wa = zeros(n,1);
-                        % est_P_wa = eye(n);
-                        % disp("Skipping acc update - Outlier detected")
-                    end
-                % else
-                    if abs(norm(acc(i-1,:)) - norm(g0)) < acc_outlier_thresh
-                        % [est_x_wa, est_P_wa] = mu_g(est_x, est_P, acc(i-1,:)', acc_cov, g0);
-                        % [est_x_wa, est_P_wa] = mu_normalizeQ(est_x_wa, est_P_wa);
-                        [est_x, est_P] = mu_g(est_x, est_P, acc(i-1,:)', acc_cov, g0);
-                        [est_x, est_P] = mu_normalizeQ(est_x, est_P);
-                        disp("Updated with accelerometer")
-                    % else
-                        % est_x_wa = zeros(n,1);
-                        % est_P_wa = eye(n);
-                        % disp("Skipping acc update - Outlier detected")
-                    end
-                % end
-            else
-                flag_acc = 0;
+                end
             end
 
             % Magnetometer update
             if all(~isnan(mag(i-1,:))) && flag_gyro == 1 % Mag measurements are available.
+                L_hat(1) = norm(mag(1,:));
                 if abs(norm(mag(i-1,:)) - L_hat(i-1)) < mag_outlier_thresh
-                    % [est_x_wm, est_P_wm] = mu_m(est_x, est_P, mag(i-1,:)', m0, mag_cov);
-                    % [est_x_wm, est_P_wm] = mu_normalizeQ(est_x_wm, est_P_wm);
                     [est_x, est_P] = mu_m(est_x, est_P, mag(i-1,:)', m0, mag_cov);
                     [est_x, est_P] = mu_normalizeQ(est_x, est_P);
                     L_hat(i) = (1-alpha) * L_hat(i-1) + alpha * norm(mag(i,:));
                     disp("Updated with magnetometer")
-                    % flag_mag = 1;
                 else
                     disp('Skipping mag update - Outlier detected')
-                    % est_x_wm = zeros(n,1);
-                    % est_P_wm = eye(n);
                     L_hat(i) = (1-alpha) * L_hat(i-1) + alpha * norm(mag(i,:));
-                    % flag_mag = 0;
                 end
-            else
-                flag_mag = 0;
             end
+            
+            euler_estq = q2euler(est_x);
+            est_euler = R * euler_estq;
 
             
-            % if flag_acc == 1 || flag_mag == 1 
-            %     x = est_x_wa' + est_x_wm';
-            %     est_x = x';
-            %     P = est_P_wa + est_P_wm;
-            % else
-                x = est_x';
-                P = est_P;
-            % end
+            x = est_x';
+            P = est_P;
             
             % Visualize result
             if rem(counter, 10) == 0
@@ -205,6 +167,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
         mag = [];
         gyro = [];
         orientation = [];
+        L_hat = [];
         discardlogs(m);
         pause(0.5)
     end
