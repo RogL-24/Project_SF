@@ -21,6 +21,5 @@ function [x, P] = mu_m(x, P, mag, m0, Rm)
     x = x + K * (mag - h);
     % Covariance update
     % P = P - K * S * K';
-    P = P - K * H * P;
 
 end
