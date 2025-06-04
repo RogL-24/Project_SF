@@ -1,4 +1,4 @@
-function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
+function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag, duration)
     % FILTERTEMPLATE  Filter template
     %
     % This is a template function for how to collect and filter data
@@ -61,21 +61,12 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
         'gyr', zeros(3, 0),...
         'mag', zeros(3, 0),...
         'orient', zeros(4, 0));
-
-    figure(1);
-    subplot(1, 2, 1);
-    ownView = OrientationView('Own filter', gca);  % Used for visualization.
-    googleView = [];
-    
-    
+    Time = tic;
     %% Filter loop
-    while 1  % Repeat while data is available
-        flag_acc = 0;
-        flag_mag = 0;
-        flag_gyro = 0;
+    while tic <= duration  % Repeat while data is available
         t = t + 1/m.SampleRate;  % Extract current time
         counter = 0;  % Used to throttle the displayed frame rate
-
+        disp(t)
         gyro = angvellog(m);
         acc = accellog(m);
         mag = magfieldlog(m);
@@ -88,13 +79,18 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
 
         if isempty(t0)  % Initialize t0
             t0 = t;
-            [~, gyro_cov] = mean_cov(gyro(:,1),gyro(:,2), gyro(:,3));
-            [acc_mean, acc_cov] = mean_cov(acc(:,1), acc(:,2), acc(:,3));
-            [mag_mean, mag_cov] = mean_cov(mag(:,1), mag(:,2), mag(:,3));
+            [~, gyro_cov] = mean_cov(gyro(:,1),gyro(:,2), gyro(:,3),1);
+            [acc_mean, acc_cov] = mean_cov(acc(:,1), acc(:,2), acc(:,3),2);
+            [mag_mean, mag_cov] = mean_cov(mag(:,1), mag(:,2), mag(:,3),3);
             g0 = acc_mean;
             m0 = [0; sqrt(mag_mean(1,1)^2 + mag_mean(2,1)^2); mag_mean(3,1)];
             mag_cov = 10 * mag_cov;
             disp("You can now move/rotate your phone")
+
+            figure;
+            subplot(1, 2, 1);
+            ownView = OrientationView('Own filter', gca);  % Used for visualization.
+            googleView = [];
         end
 
         N = min([N_gyro,N_mag,N_acc,N_orientation]);
@@ -104,12 +100,10 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
                 [est_x, est_P] = tu_qw(est_x, est_P, gyro(i-1,:)', T, gyro_cov);
                 [est_x, est_P] = mu_normalizeQ(est_x, est_P);
                 flag_gyro = 1;
-            else
-                flag_gyro = 0;
             end
 
             % Accelerometer update
-            if all(~isnan(acc(i-1,:))) && flag_gyro == 1
+            if all(~isnan(acc(i-1,:)))
                 if abs(norm(acc(i-1,:)) - g) < acc_outlier_thresh
                     [est_x, est_P] = mu_g(est_x, est_P, acc(i-1,:)', acc_cov, g0);
                     [est_x, est_P] = mu_normalizeQ(est_x, est_P);
@@ -122,7 +116,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
             end
 
             % Magnetometer update
-            if all(~isnan(mag(i-1,:))) && flag_gyro == 1 % Mag measurements are available.
+            if all(~isnan(mag(i-1,:))) % Mag measurements are available.
                 L_hat(1) = norm(mag(1,:));
                 if abs(norm(mag(i-1,:)) - L_hat(i-1)) < mag_outlier_thresh
                     [est_x, est_P] = mu_m(est_x, est_P, mag(i-1,:)', m0, mag_cov);
@@ -150,10 +144,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
                         % Used for visualization.
                         googleView = OrientationView('Google filter', gca);
                     end
-                    orient = [0 -1 0; 0 -1 0; 0 0 1] * orientation(i-1,:)';
-                    match_orient = eul2quat(orient');
-                    setOrientation(googleView, match_orient);
-                    % setOrientation(googleView, eul2quat(orientation(i-1,:)));
+                    setOrientation(googleView, eul2quat(orientation(i-1,:)));
                     title(googleView, 'GOOGLE', 'FontSize', 16);
                 end
             end
@@ -168,8 +159,7 @@ function [xhat, meas] = filterTemplateLog(calAcc, calGyr, calMag)
             meas.acc(:, end+1) = acc(i-1,:)';
             meas.gyr(:, end+1) = gyro(i-1,:)';
             meas.mag(:, end+1) = mag(i-1,:)';
-            % meas.orient(:, end+1) = eul2quat(orientation(i-1,:))';
-            meas.orient(:,end+1) = eul2quat
+            meas.orient(:, end+1) = eul2quat(orientation(i-1,:))';
         end
         acc = [];
         mag = [];
