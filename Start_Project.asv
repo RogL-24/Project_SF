@@ -14,7 +14,6 @@ hold on
 grid on
 plot(meas.t, Euler_measurement(1,:))
 plot(meas.t, - pi/2 - Euler_estimate(1,:))
-% plot(meas.t, Euler_estimate(1,:))
 legend('True','Estimate')
 xlabel('rad')
 ylabel('t')

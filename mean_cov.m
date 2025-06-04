@@ -10,12 +10,15 @@ function [mean_data, covariance_data] = mean_cov(x_data, y_data, z_data, sensor_
     if sensor_no == 1
         sensor = 'Gyro';
         unit = 'rad/s';
+        data_title = 'Gyro data';
     elseif sensor_no == 2
         sensor = 'Accelerometer';
         unit = 'm/s^2';
+        data_title = 'Acceleration data';
     else
         sensor = 'Magnetometer';
         unit = '\muT';
+        data_title = 'Magnetic data';
     end
 
     figure
@@ -44,5 +47,17 @@ function [mean_data, covariance_data] = mean_cov(x_data, y_data, z_data, sensor_
     title(sprintf('%s data distribution in the z-axis',sensor))
     xlabel(unit)
     ylabel('No of data points')
+    hold off
+
+    figure
+    hold on
+    grid on
+    plot(x_data)
+    plot(y_data)
+    plot(z_data)
+    xlabel('0.01s')
+    ylabel(unit)
+    title(data_title)
+    legend('x','y','z')
     hold off
 end
